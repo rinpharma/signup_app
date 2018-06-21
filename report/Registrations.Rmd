@@ -1,0 +1,88 @@
+---
+title: "Untitled"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: row
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(googlesheets)
+
+#gs_auth()
+
+## Get data --------
+
+table <- "RinPharmaRegistered"
+sheet <- gs_title(table)
+  # Read the data
+registered <-  gs_read_csv(sheet) %>%
+  filter(Name != "test")
+
+
+invited <- read_csv(
+    "invites.csv",
+    col_types = cols(
+      Type = col_character(),
+      Name = col_character(),
+      Email = col_character(),
+      Company = col_character()
+    )
+  ) %>%
+  mutate(
+    Email = tolower(Email)
+  )
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Accepted invite 
+
+```{r}
+gaugemax <- n_distinct(invited$Email)
+
+gauge(
+  n_distinct(registered$Email), 
+  min = 0, max = gaugemax, 
+  symbol = '', gaugeSectors(
+    success = c(0, gaugemax-26), 
+    warning = c(gaugemax-25, gaugemax-11),
+    danger = c(gaugemax-10, gaugemax)
+  )
+)
+```
+
+### Invited 
+
+```{r}
+  valueBox(
+    value = n_distinct(invited$Email),
+    icon = "fa-users",
+    color = "primary"
+  )
+```
+
+### Tickets left 
+
+```{r}
+  valueBox(
+    value = n_distinct(invited$Email) - n_distinct(registered$Email),
+    icon = "fa-users",
+    color = "primary"
+  )
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Accepted
+
+```{r}
+DT::datatable(
+  registered
+)
+```
