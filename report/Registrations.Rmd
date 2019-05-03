@@ -1,18 +1,57 @@
 ---
-title: "Untitled"
-output: 
+title: "R/Pharma registrations"
+resource_files:
+- .httr-oauth
+runtime: shiny
+output:
   flexdashboard::flex_dashboard:
     orientation: row
     vertical_layout: fill
-runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
 library(flexdashboard)
 library(tidyverse)
 library(googlesheets)
+library(treemap)
 
 #gs_auth()
+
+############## popup
+vals <- reactiveValues(data = NULL) # holder for values
+vals$passwordok <- "No" # set password to false
+
+v.passphrase <- readLines("passphrase")
+  # box content
+    dataModal <- function(failed = FALSE) {
+      modalDialog(
+        title = "R/Pharma committee only!",
+        strong("A password is required to view who has replied, and who we are waiting on."),
+        br(),
+        passwordInput("passwordbox", "Enter password"),
+        if (failed) div(tags$b("Invalid password", style = "color: red;")),
+        a("Click here if you need the password.", href = "mailto:blackj9@roche.com"),
+        br(),
+        span(" This app is powered by Shiny :) ."),
+        footer = tagList(
+          modalButton("I don't want to see names."),
+          actionButton("ok", "Submit password")
+        )
+      )
+    }
+
+  # check password
+    observeEvent(input$ok, {
+      # Check that data object exists and is data frame.
+      if (!is.null(input$passwordbox) && nzchar(input$passwordbox) &&
+          input$passwordbox == v.passphrase) {
+        vals$passwordok <- "Yes"
+        removeModal()
+      } else {
+        showModal(dataModal(failed = TRUE))
+      }
+    })
+######################
 
 ## Get data --------
 
@@ -22,6 +61,24 @@ sheet <- gs_title(table)
 registered <-  gs_read_csv(sheet) %>%
   filter(Name != "test")
 
+# declined
+table <- "RinPharmaDeclined"
+sheet <- gs_title(table)
+  # Read the data
+declined <-  gs_read_csv(sheet) 
+
+table <- "RinPharmaMixer"
+sheet <- gs_title(table)
+  # Read the data
+mixer <- registered %>%
+  select(Email,Name) %>%
+  left_join(
+    gs_read_csv(sheet) %>%
+      filter(Name != "Test") %>%
+      select(-Name)
+  ) 
+  
+
 
 invited <- read_csv(
     "invites.csv",
@@ -29,12 +86,28 @@ invited <- read_csv(
       Type = col_character(),
       Name = col_character(),
       Email = col_character(),
-      Company = col_character()
+      Company = col_character(),
+      Invited = col_character()
     )
   ) %>%
   mutate(
-    Email = tolower(Email)
+    Email = tolower(Email),
+    Invited = as.Date(Invited, "%d.%m.%y")
   )
+
+# replace company with data from csv
+  registered <- registered %>%
+    select(-Company) %>%
+    left_join(
+      invited %>% select(Email,Company),
+      by = "Email"
+    )
+  
+# if declined, remove from invited
+  invited <- invited %>%
+    filter(
+      !Email %in% declined$Email
+    )
 ```
 
 Row
@@ -76,13 +149,212 @@ gauge(
   )
 ```
 
-Row
+Row {.tabset}
 -----------------------------------------------------------------------
 
-### Accepted
+### Accepted invite
 
 ```{r}
-DT::datatable(
-  registered
-)
+DT::renderDataTable({
+  if (vals$passwordok != "Yes") {
+    showModal(dataModal())
+  } 
+  
+  validate(
+    need(
+      vals$passwordok == "Yes", 
+      "You selected to not authenticate - so the list is hidden")
+  )
+  
+registered %>%
+  select(-Attending) %>%
+  DT::datatable(
+    rownames = FALSE,
+    extensions = 'Buttons', 
+      options = list(
+      dom = 'Bfrtip',
+      buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+    )
+  )
+})
+```
+
+### Invite pending
+
+```{r}
+DT::renderDataTable({
+  if (vals$passwordok != "Yes") {
+    showModal(dataModal())
+  } 
+  
+  validate(
+    need(
+      vals$passwordok == "Yes", 
+      "You selected to not authenticate - so the list is hidden")
+  )
+  
+  invited %>%
+    filter(!Email %in% tolower(registered$Email)) %>%
+    mutate(
+      `Days since invited` = Sys.Date() - Invited
+    ) %>%
+    #select(-Attending) %>%
+    DT::datatable(
+      rownames = FALSE,
+    extensions = 'Buttons', 
+      options = list(
+      dom = 'Bfrtip',
+      buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+    )
+    )
+})
+```
+
+### Declined
+
+```{r}
+DT::renderDataTable({
+  if (vals$passwordok != "Yes") {
+    showModal(dataModal())
+  } 
+  
+  validate(
+    need(
+      vals$passwordok == "Yes", 
+      "You selected to not authenticate - so the list is hidden")
+  )
+  
+  declined %>%
+    DT::datatable(
+      rownames = FALSE,
+    extensions = 'Buttons', 
+      options = list(
+      dom = 'Bfrtip',
+      buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+    )
+    )
+})
+```
+
+
+### Workshops/Mixer replies
+
+```{r}
+DT::renderDataTable({
+  if (vals$passwordok != "Yes") {
+    showModal(dataModal())
+  } 
+  
+  validate(
+    need(
+      vals$passwordok == "Yes", 
+      "You selected to not authenticate - so the list is hidden")
+  )
+  
+  mixer %>%
+    arrange(Attending) %>%
+    DT::datatable(
+      rownames = FALSE,
+    extensions = 'Buttons', 
+      options = list(
+      dom = 'Bfrtip',
+      buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+    )
+    )
+})
+```
+
+### Workshop summary
+
+```{r}
+renderTable({
+tibble(
+    Workshop = c(
+      "The largest Shiny application in the world. Roche.Diagnostics.bioWARP",
+      "The Challenges of Validating R",
+      "Interactive data visualization with R, plotly, and dashR",
+      "Keeping things Peachy when Shiny gets Hairy",
+      "Analyzing Clinical Trials Data with R",
+      "Bayesian Models for Smaller Trial Sizes - Stan with R for analysis.",
+      "Moving Fast Without Breaking Things: Navigating the R Ecosystem in an Enterprise Environment"
+    ),
+    Lead = c("Wolf","Nicholls","Sievert","Foos","Waddell","Lee","Pastoor"),
+    Spaces = c(20,45,60,45,60,20,30)
+  ) %>%
+    left_join(
+      rbind(
+        mixer %>%
+          select(Name,Email,Lead = SessionOne),
+        mixer %>%
+          select(Name,Email,Lead = SessionTwo)
+      ) %>%
+        group_by(Lead) %>%
+        summarise(Attending = n()),
+      by = "Lead"
+    ) %>%
+    mutate(
+      Attending = ifelse(is.na(Attending),0,Attending),
+      Attending = as.integer(Attending),
+      `Spaces left` = as.integer(Spaces - Attending)
+    ) %>%
+    select(Workshop,Lead,Attending,`Spaces left`)
+})
+```
+
+### Companies
+
+```{r, warning=FALSE}
+treemap(
+  registered %>%
+    group_by(Company) %>%
+    summarise(
+      `People attending` = n()
+    ) %>% as.data.frame(),
+  index = c("Company"),
+  vSize = "People attending",
+  vColor = "Company",
+  type = "categorical",
+  fontsize.labels = 9,
+  position.legend = "none",
+  fontsize.legend = 6)
+```
+
+### By type
+
+```{r, warning=FALSE}
+treemap(
+  registered %>%
+    mutate(
+      Industry = case_when(
+        Company %in% c(
+          "Roche / Genentech","Biogen",
+          "J & J","Pfizer","Merck","Sanofi",
+          "Amgen","BMS","Novartis","Abbott",
+          "Abbvie","BMS","Boehringer Ingelheim",
+          "EDM Serono","GSK","Eisai","Eli Lily"
+          ) ~ "Pharma",
+        Company %in% c(
+          "PPDI","Metrum","Genesis","Covance","Generable",
+          "Sievert Consulting LLC","TCB Analytics"
+          ) ~ "CRO",
+        Company %in% c(
+          "Harvard","Broad Institute","Mayo Clinic","Iowa State University",
+          "Oregon Health & Science University","IQSS Harvard",
+          "Northeastern University","Technical University of Denmark",
+          "University of Illinois at Chicago"
+          ) ~ "Academic",
+        Company %in% c("FDA","RStudio","rOpenSci") ~ "Other"
+      )
+    ) %>% 
+    group_by(Industry,Company) %>%
+    summarise(
+      `People attending` = n()
+    )  %>% as.data.frame(),
+  index = c("Company"),
+  vSize = "People attending",
+  vColor = "Industry",
+  type = "categorical",
+  fontsize.labels = 7,
+  position.legend = "none",
+  fontsize.legend = 6)
 ```

@@ -57,27 +57,33 @@ invited <- read_csv(
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
+  # GOOGLE ANALYTICS
+  tags$head(includeScript("gs.js")),
 
    # Application title
    titlePanel("R/Pharma registration"),
 
    # Their email
-   textInput("entered_email", "Please enter your email address", ""),
+   textInput("entered_email", "Please enter the email address we used to contact you", ""),
 
    # Industry
-   radioButtons(
-     "industry",
-     "Please choose the research type that best represents you:",
-      c("Regulatory body",
-        "Pharma company",
-        "Contract Research Organisation",
-        "Non-profit",
-        "Academic",
-        "Student")),
-   helpText("Spaces are very limited, so please only register if you plan to attend"),
+   # radioButtons(
+   #   "industry",
+   #   "Please choose the research type that best represents you:",
+   #    c("Pharma company",
+   #      "Regulatory body",
+   #      "Contract Research Organisation",
+   #      "Non-profit",
+   #      "Academic",
+   #      "Student")),
+  helpText(
+    a("Please click here to view the terms and conditions",
+      href = "http://rinpharma.com/terms")
+    ),
+  helpText("Spaces are very limited, so please only register if you plan to attend"),
    checkboxInput(
      "confirmed",
-     "I confirm that I plan to attend R/Pharma on August 15th and 16th",
+     "I confirm that I accept the terms linked to above and I plan to attend R/Pharma on August 15th and 16th",
      FALSE),
    actionButton("submit", "Submit"),
 
@@ -106,7 +112,7 @@ server <- function(input, output) {
     # check if invited
       validate(
         need(tolower(input$entered_email) %in% tolower(invited$Email),
-             "Sorry, your email is not on the list of invited people")
+             "Sorry, your email is not on the list of invited people, please use the form at rinpharma.com to get in contact.")
       )
 
     # check they agree
@@ -123,13 +129,13 @@ server <- function(input, output) {
     # check if they are already registered
     validate(
       need(!tolower(input$entered_email) %in% tolower(old_data$Email),
-           paste(input$entered_email,"is already registered."))
+           paste(input$entered_email,"is already registered. See you soon in Boston."))
     )
 
     # Merge with data
       data <- data.frame(
         Email = tolower(input$entered_email),
-        Industry = input$industry,
+        Industry = "POST REMOVAL",
         Attending = input$confirmed,
         Time = Sys.time(),
         stringsAsFactors = FALSE
@@ -157,7 +163,7 @@ server <- function(input, output) {
     input$submit
     output <- formData()
     paste0(
-      output$Name,", thank you for registering."
+      output$Name,", thank you for registering. See you in Boston."
     )
   })
 }

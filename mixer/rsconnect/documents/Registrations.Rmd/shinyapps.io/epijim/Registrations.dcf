@@ -1,0 +1,12 @@
+name: Registrations
+title: Registrations
+username:
+account: epijim
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 369479
+bundleId: 1508004
+url: https://epijim.shinyapps.io/Registrations/
+when: 1532982971.02823
+asMultiple: FALSE
+asStatic: FALSE
