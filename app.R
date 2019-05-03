@@ -36,10 +36,29 @@ library(googlesheets)
 
   # pull workshop sizes
   workshop_sizes <- workbook %>%
-    gs_read(ws = "App_Workshops")
+    gs_read(ws = "App_Workshops") %>%
+    mutate(
+      Workshop = paste0(
+        `Workshop Leader`,": ",`Workshop Title`
+      ),
+      Time = paste(`Start Time`,"to",`End Time`)
+    ) %>%
+    select(
+      Workshop, Capacity, Time
+    )
 
-  testdata2 <- workbook %>%
-    gs_read(ws = "App_Output")
+  workshop_times <- unique(workshop_sizes$Time)
+
+  if(length(workshop_times) != 2) stop("Number of workshops changed")
+
+  options_workshop_morning <- workshop_sizes %>%
+    filter(Time == workshop_times[1]) %>%
+    pull(Workshop)
+
+  options_workshop_afternoon <- workshop_sizes %>%
+    filter(Time == workshop_times[2]) %>%
+    pull(Workshop)
+
 
 saveData <- function(data) {
   # Add the data as a new row
@@ -49,14 +68,10 @@ saveData <- function(data) {
 
   check_invitations <- function() {
     # Grab the Google Sheet
-    sheet <- workbook %>%
+    workbook %>%
       gs_read(ws = "App_Output")
   }
 
-## Form maintenance -------
-
-  # Define the fields we want to save from the form
-  fields <- c("entered_email", "industry", "confirmed")
 
 ### UI ----------
 
@@ -81,19 +96,14 @@ ui <- fluidPage(
                    "No" = "No")
     ),
   radioButtons("MorningWorkshop", "Would you like to sign up for an 8am workshop on Wednesday (Aug 15th)?",
-               c("No" = "No",
-                 "Keeping things Peachy when Shiny gets Hairy" = "Foos",
-                 "Analyzing Clinical Trials Data with R Adrian Waddell" = "Waddell",
-                 "Bayesian Models for Smaller Trial Sizes - Stan with R for analysis" = "Lee",
-                 "Moving Fast Without Breaking Things: Navigating the R Ecosystem in an Enterprise Environment" = "Pastoor"
+               c("No",
+                 options_workshop_morning
                )
   ),
   hr(),
   radioButtons("AfternoonWorkshop", "Would you like to sign up for an 8am workshop on Thursday (Aug 16th)?",
-               c("No" = "No",
-                 "Interactive data visualization with R, plotly, and dashR" = "Sievert",
-                 "The Challenges of Validating R" = "Nicholls",
-                 " The largest Shiny application in the world. Roche.Diagnostics.bioWARP" = "Wolf"
+               c("No",
+                 options_workshop_afternoon
                )
   ),
   hr(),
@@ -127,7 +137,7 @@ ui <- fluidPage(
   mainPanel(
     h3("Summary of open spots"),
     helpText("This table will not update when you press submit"),
-    #tableOutput("table"),
+    tableOutput("table"),
     width = 6
   )
 
@@ -172,6 +182,12 @@ server <- function(input, output) {
            paste(input$entered_email,"is already registered. See you soon in Boston."))
     )
 
+    # check if workshop full
+    validate(
+      need(!c(input$MorningWorkshop,input$AfternoonWorkshop) %in% full_workshops(),
+           "Sorry, one of the workshops you selected is full.")
+    )
+
     # Merge with data
       data <- data.frame(
         Email = tolower(input$entered_email),
@@ -207,6 +223,38 @@ server <- function(input, output) {
     paste0(
       output$Name,", thank you for registering. See you in Boston."
     )
+  })
+
+  ## Workshop code
+  the_table <- reactive({
+    workshop_sizes %>%
+      left_join(
+        rbind(
+          check_invitations() %>%
+            select(Name,Email,Workshop = MorningWorkshop),
+          check_invitations() %>%
+            select(Name,Email,Workshop = AfternoonWorkshop)
+        ) %>%
+          group_by(Workshop) %>%
+          summarise(Attending = n()),
+        by = "Workshop"
+      ) %>%
+      mutate(
+        Attending = ifelse(is.na(Attending),0,Attending),
+        Attending = as.integer(Attending),
+        `Spaces left` = as.integer(Capacity - Attending)
+      ) %>%
+      select(Workshop,Attending,`Spaces left`)
+  })
+
+  full_workshops <- reactive({
+    the_table() %>%
+      filter(`Spaces left` == 0) %>%
+      pull(Workshop)
+  })
+
+  output$table <- renderTable({
+    the_table()
   })
 }
 
