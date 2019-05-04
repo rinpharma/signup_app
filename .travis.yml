@@ -1,0 +1,22 @@
+dist: xenial
+sudo: false
+latex: false
+language: r
+r: release
+warnings_are_errors: false
+cache:
+  packages: true
+apt_packages:
+  - libgdal-dev
+  - libudunits2-dev
+git:
+  depth: false
+r_packages:
+  - rsconnect
+  - shiny
+  - tidyverse
+  - googlesheets
+  - shinythemes
+script:
+  - R -f deploy.R
+
