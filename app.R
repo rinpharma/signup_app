@@ -89,19 +89,19 @@ ui <- fluidPage(
    textInput("entered_email", "Please enter the email address we used to contact you", ""),
 
     helpText("Come join fellow R/Pharma Conference attendees for an informal mixer hosted by Metrum Research Group following our day one programming!"),
-    helpText("Time: Wednesday August 15th from 6:00-7:30pm."),
+    helpText("Time: Thursday August 22nd from 6:00-7:30pm."),
 
     radioButtons("Mixer", "Do you plan to attend the mixer?",
                  c("Yes" = "Yes",
                    "No" = "No")
     ),
-  radioButtons("MorningWorkshop", "Would you like to sign up for an 8am workshop on Wednesday (Aug 15th)?",
+  radioButtons("MorningWorkshop", "Would you like to sign up for an morning workshop on Wednesday (Aug 21st)?",
                c("No",
                  options_workshop_morning
                )
   ),
   hr(),
-  radioButtons("AfternoonWorkshop", "Would you like to sign up for an 8am workshop on Thursday (Aug 16th)?",
+  radioButtons("AfternoonWorkshop", "Would you like to sign up for an afternoon workshop on Wednesday (Aug 21st)?",
                c("No",
                  options_workshop_afternoon
                )
