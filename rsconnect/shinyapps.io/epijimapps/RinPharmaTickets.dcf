@@ -1,0 +1,13 @@
+name: RinPharmaTickets
+title: RinPharmaTickets
+username:
+account: epijimapps
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 909025
+bundleId: 2059671
+url: https://epijimapps.shinyapps.io/RinPharmaTickets/
+when: 1556968945.60598
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: report

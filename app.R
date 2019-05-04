@@ -10,6 +10,7 @@
 library(shiny)
 library(tidyverse)
 library(googlesheets)
+library(shinythemes)
 
 # to create .httr-oauth
 # gs_auth()
@@ -72,11 +73,14 @@ saveData <- function(data) {
       gs_read(ws = "App_Output")
   }
 
+  # download current sheet
+  old_data <- check_invitations()
 
 ### UI ----------
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
+  theme = shinytheme("flatly"),
   # GOOGLE ANALYTICS
   tags$head(includeScript("gs.js")),
 
@@ -86,7 +90,11 @@ ui <- fluidPage(
   sidebarPanel(
 
    # Their email
+    h2("DEVELOPMENT APP - dates/titles not confirmed and responses will be deleted"),
+
    textInput("entered_email", "Please enter the email address we used to contact you", ""),
+
+   h2("Conference mixer"),
 
     helpText("Come join fellow R/Pharma Conference attendees for an informal mixer hosted by Metrum Research Group following our day one programming!"),
     helpText("Time: Thursday August 22nd from 6:00-7:30pm."),
@@ -95,6 +103,11 @@ ui <- fluidPage(
                  c("Yes" = "Yes",
                    "No" = "No")
     ),
+
+  h2("Conference workshops"),
+
+  helpText("On the day before the conference (Wednesday 21st of August), there will be free morning and afternoon workshops."),
+
   radioButtons("MorningWorkshop", "Would you like to sign up for an morning workshop on Wednesday (Aug 21st)?",
                c("No",
                  options_workshop_morning
@@ -118,6 +131,9 @@ ui <- fluidPage(
    #      "Non-profit",
    #      "Academic",
    #      "Student")),
+
+  h2("Conference signup"),
+
   helpText(
     a("Please click here to view the terms and conditions",
       href = "http://rinpharma.com/terms")
@@ -125,7 +141,7 @@ ui <- fluidPage(
   helpText("Spaces are very limited, so please only register if you plan to attend"),
    checkboxInput(
      "confirmed",
-     "I confirm that I accept the terms linked to above and I plan to attend R/Pharma on August 15th and 16th",
+     "I confirm that I accept the terms linked to above and I plan to attend R/Pharma on August 22nd and 23rd.",
      FALSE),
    actionButton("submit", "Submit"),
 
@@ -172,9 +188,6 @@ server <- function(input, output) {
       )
 
       incProgress(0.4, detail = paste("Checking if you are already registered"))
-
-    # download current sheet
-      old_data <- check_invitations()
 
     # check if they are already registered
     validate(
@@ -230,9 +243,9 @@ server <- function(input, output) {
     workshop_sizes %>%
       left_join(
         rbind(
-          check_invitations() %>%
+          old_data %>%
             select(Name,Email,Workshop = MorningWorkshop),
-          check_invitations() %>%
+          old_data %>%
             select(Name,Email,Workshop = AfternoonWorkshop)
         ) %>%
           group_by(Workshop) %>%
