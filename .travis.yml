@@ -9,6 +9,9 @@ cache:
 apt_packages:
   - libgdal-dev
   - libudunits2-dev
+branches:
+  only:
+  - master
 git:
   depth: false
 r_packages:
