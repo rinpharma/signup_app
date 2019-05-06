@@ -3,3 +3,4 @@ packrat/lib*/
 password
 packrat
 .httr-oauth
+googlesheets_token.rds

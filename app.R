@@ -12,8 +12,10 @@ library(tidyverse)
 library(googlesheets)
 library(shinythemes)
 
-# to create .httr-oauth
-# gs_auth()
+# to create .httr-oauth in rds format
+# token <- gs_auth()
+# saveRDS(token, file = "googlesheets_token.rds")
+suppressMessages(gs_auth(token = "googlesheets_token.rds", verbose = FALSE))
 
 # get key
 # extract_key_from_url(
