@@ -92,14 +92,12 @@ ui <- fluidPage(
   sidebarPanel(
 
    # Their email
-    h2("DEVELOPMENT APP - dates/titles not confirmed and responses will be deleted"),
-
    textInput("entered_email", "Please enter the email address we used to contact you", ""),
 
    h2("Conference mixer"),
 
     helpText("Come join fellow R/Pharma Conference attendees for an informal mixer hosted by Metrum Research Group following our day one programming!"),
-    helpText("Time: Thursday August 22nd from 6:00-7:30pm."),
+    helpText("Time: Thursday August 22nd (exact time will be emailed later)."),
 
     radioButtons("Mixer", "Do you plan to attend the mixer?",
                  c("Yes" = "Yes",
