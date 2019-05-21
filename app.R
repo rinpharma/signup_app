@@ -136,7 +136,7 @@ ui <- fluidPage(
 
   helpText(
     a("Please click here to view the terms and conditions",
-      href = "http://rinpharma.com/terms")
+      href = "http://rinpharma.com/terms", target="_blank")
     ),
   helpText("Spaces are very limited, so please only register if you plan to attend"),
    checkboxInput(
