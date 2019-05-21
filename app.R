@@ -11,6 +11,7 @@ library(shiny)
 library(tidyverse)
 library(googlesheets)
 library(shinythemes)
+library(shinyWidgets)
 
 # to create .httr-oauth in rds format
 # token <- gs_auth()
@@ -160,7 +161,7 @@ ui <- fluidPage(
 )
 
 # Define server logic required to draw a histogram
-server <- function(input, output) {
+server <- function(input, output, session) {
 
   # Whenever a form is submitted aggregate all form data
   formData <- eventReactive(input$submit,{
@@ -228,6 +229,7 @@ server <- function(input, output) {
     withProgress(message = 'Saving registration', value = 1, {
       saveData(tosave)
     })
+    sendSweetAlert(session = session, title = 'Thank You', text = 'Thank you for registering for R/Pharma 2019', type = 'success')
   })
 
   output$response <- renderText({
