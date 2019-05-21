@@ -6,6 +6,7 @@ library(shiny)
 library(tidyverse)
 library(googlesheets)
 library(shinythemes)
+library(shinyWidgets)
 
 # Set the account info for deployment.
 setAccountInfo(name   = "epijimapps",
