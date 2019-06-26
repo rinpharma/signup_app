@@ -197,8 +197,11 @@ server <- function(input, output, session) {
     )
 
     # check if workshop full
+    print(full_workshops())
+    print(input$MorningWorkshop)
+    print(input$AfternoonWorkshop)
     validate(
-      need(!c(input$MorningWorkshop,input$AfternoonWorkshop) %in% full_workshops(),
+      need(!any(c(input$MorningWorkshop,input$AfternoonWorkshop) %in% full_workshops()),
            "Sorry, one of the workshops you selected is full.")
     )
 
@@ -264,7 +267,7 @@ server <- function(input, output, session) {
 
   full_workshops <- reactive({
     the_table() %>%
-      filter(`Spaces left` == 0) %>%
+      filter(`Spaces left` < 1) %>%
       pull(Workshop)
   })
 
